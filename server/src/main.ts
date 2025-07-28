@@ -9,7 +9,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.enableCors({
-    origin: 'https://todo-list-flax-phi-78.vercel.app',
+    origin: 'https://todolist-sandy-beta.vercel.app',
   });
 
   await app.listen(configService.get<number>('PORT') ?? 8000);
