@@ -1,6 +1,3 @@
-# Simplified CI/CD Pipeline for Vercel + Railway
-# Only includes what you actually need for your hosted setup
-
 name: CI/CD Pipeline
 
 # Trigger on push to main branch
@@ -80,18 +77,6 @@ jobs:
       - name: Build backend
         working-directory: ./server
         run: pnpm build
-
-      - name: Deploy to Railway
-        if: github.ref == 'refs/heads/main'
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          npm install -g @railway/cli
-          railway login --token $RAILWAY_TOKEN
-          cd server
-          # Copy production env file for deployment
-          cp .env.production .env
-          railway up --service backend
 
   # Test and Deploy Frontend to Vercel
   frontend:
