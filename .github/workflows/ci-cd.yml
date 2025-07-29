@@ -7,11 +7,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
         env:
@@ -19,14 +17,12 @@ jobs:
         with:
           args: --severity-threshold=high
           command: test
-
       - name: Upload Snyk results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: snyk-results
           path: snyk-results.json
-
   # Test and Deploy Backend to Railway
   backend:
     name: Backend - Test & Deploy
