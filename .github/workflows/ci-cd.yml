@@ -31,7 +31,6 @@ jobs:
         with:
           args: --severity-threshold=high
           command: test
-        working-directory: ./server
       
       # Scan client directory
       - name: Run Snyk on client
@@ -41,7 +40,6 @@ jobs:
         with:
           args: --severity-threshold=high
           command: test
-        working-directory: ./client
       
       - name: Upload Snyk results
         uses: actions/upload-artifact@v4
