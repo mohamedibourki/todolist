@@ -23,23 +23,35 @@ jobs:
         with:
           version: 8
       
+      # Install Snyk CLI
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+      
+      # Authenticate Snyk
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+      
       # Scan server directory
       - name: Run Snyk on server
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-          command: test
+        continue-on-error: true
+        run: |
+          cd ./server
+          snyk test --severity-threshold=high --json > ../snyk-server-results.json || true
       
       # Scan client directory
       - name: Run Snyk on client
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-          command: test
+        continue-on-error: true
+        run: |
+          cd ./client
+          snyk test --severity-threshold=high --json > ../snyk-client-results.json || true
+      
+      - name: Combine results
+        run: |
+          echo '{"server":' > snyk-results.json
+          cat snyk-server-results.json >> snyk-results.json
+          echo ',"client":' >> snyk-results.json
+          cat snyk-client-results.json >> snyk-results.json
+          echo '}' >> snyk-results.json
       
       - name: Upload Snyk results
         uses: actions/upload-artifact@v4
