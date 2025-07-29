@@ -11,14 +11,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      
+      # Setup pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
       # Scan server directory
       - name: Run Snyk on server
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=server/pnpm-lock.yaml
+          args: --severity-threshold=high
           command: test
+        working-directory: ./server
       
       # Scan client directory
       - name: Run Snyk on client
@@ -26,8 +39,9 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=client/pnpm-lock.yaml
+          args: --severity-threshold=high
           command: test
+        working-directory: ./client
       
       - name: Upload Snyk results
         uses: actions/upload-artifact@v4
