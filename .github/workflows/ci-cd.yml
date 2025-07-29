@@ -1,16 +1,36 @@
 name: CI/CD Pipeline
-
 # Trigger on push to main branch
 on:
   push:
     branches: [main]
-
 jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+          command: test
+
+      - name: Upload Snyk results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: snyk-results
+          path: snyk-results.json
+
   # Test and Deploy Backend to Railway
   backend:
     name: Backend - Test & Deploy
     runs-on: ubuntu-latest
-
     # Use PostgreSQL for testing
     services:
       postgres:
@@ -25,27 +45,22 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "pnpm"
           cache-dependency-path: server/pnpm-lock.yaml
-
       - name: Install dependencies
         working-directory: ./server
         run: pnpm install
-
       - name: Create test environment
         working-directory: ./server
         run: |
@@ -55,9 +70,8 @@ jobs:
           DATABASE_USER=postgres
           DATABASE_PASSWORD=postgres
           DATABASE_NAME=test_db
-          PORT=8000
+          PORT=8001
           EOF
-
       - name: Create production environment
         working-directory: ./server
         run: |
@@ -67,51 +81,43 @@ jobs:
           DATABASE_USER=${{ secrets.DATABASE_USER }}
           DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
           DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-          PORT=8000
+          PORT=8001
+          SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           EOF
-
       - name: Run tests
         working-directory: ./server
         run: pnpm test
-
       - name: Build backend
         working-directory: ./server
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: pnpm build
-
   # Test and Deploy Frontend to Vercel
   frontend:
     name: Frontend - Test & Deploy
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "20"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
+          version: 10
       - name: Install dependencies
         working-directory: ./client
-        run: bun install
-
+        run: pnpm install
       - name: Create environment file
         working-directory: ./client
         run: |
           cat > .env.local << EOF
           NEXT_PUBLIC_API_URL=https://todolist-production-c816.up.railway.app
+          SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           EOF
-
       - name: Run linting
         working-directory: ./client
-        run: bun run lint
-
+        run: pnpm run lint
       - name: Build frontend
         working-directory: ./client
-        run: bun run build
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: pnpm run build

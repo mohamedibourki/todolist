@@ -52,13 +52,13 @@ DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=your_password
 DATABASE_NAME=todolist
-PORT=8000
+PORT=8001
 CORS_ORIGIN=http://localhost:3000
 ```
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_URL=http://localhost:8001
 ```
 
 ## 🚀 Deployment
@@ -136,7 +136,7 @@ Add these secrets in your GitHub repository settings:
 
 ```bash
 # Test backend locally
-curl http://localhost:8000/health
+curl http://localhost:8001/health
 
 # Test frontend locally
 curl http://localhost:3000/api/health
