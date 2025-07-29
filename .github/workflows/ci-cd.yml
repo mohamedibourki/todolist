@@ -10,13 +10,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Run Snyk to check for vulnerabilities
+      
+      # Scan server directory
+      - name: Run Snyk on server
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          args: --severity-threshold=high --file=server/pnpm-lock.yaml
           command: test
+      
+      # Scan client directory
+      - name: Run Snyk on client
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=client/pnpm-lock.yaml
+          command: test
+      
       - name: Upload Snyk results
         uses: actions/upload-artifact@v4
         if: always()
