@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Debug: Log the API base URL in development
 if (process.env.NODE_ENV === 'development') {
-  console.log('API_BASE_URL:', API_BASE_URL);
+  API_BASE_URL = 'http://localhost:8001'
 }
 
 export class ApiService {
