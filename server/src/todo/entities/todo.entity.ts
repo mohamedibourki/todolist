@@ -10,4 +10,7 @@ export class Todo {
 
   @Column({ default: false })
   completed: boolean;
+
+  @Column({ default: 0 })
+  order: number;
 }

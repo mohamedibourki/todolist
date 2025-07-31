@@ -11,6 +11,7 @@ import {
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { Todo } from './entities/todo.entity';
 
 @Controller('todos')
 export class TodoController {
@@ -19,6 +20,11 @@ export class TodoController {
   @Post()
   create(@Body() createTodoDto: CreateTodoDto) {
     return this.todoService.create(createTodoDto);
+  }
+
+  @Post('reorder')
+  reorder(@Body() todos: Todo[]) {
+    return this.todoService.reorder(todos);
   }
 
   @Get()

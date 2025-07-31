@@ -12,12 +12,50 @@ export class TodoService {
   ) {}
 
   create(createTodoDto: CreateTodoDto) {
-    return this.todoRepository.save(createTodoDto);
+    const todo = this.todoRepository.create({
+      name: createTodoDto.name,
+      completed: createTodoDto.completed || false,
+      order: createTodoDto.order || 0,
+    });
+
+    return this.todoRepository.save(todo);
+  }
+
+  async reorder(todos: Todo[]) {
+    await this.todoRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        for (const todo of todos) {
+          await transactionalEntityManager.update(
+            Todo,
+            { id: todo.id },
+            { order: todo.order },
+          );
+        }
+      },
+    );
+
+    return this.todoRepository.find({
+      order: {
+        order: 'ASC',
+      },
+    });
   }
 
   findAll(completed?: boolean) {
-    if (!completed) return this.todoRepository.find();
-    else return this.todoRepository.findBy({ completed });
+    if (!completed) {
+      return this.todoRepository.find({
+        order: {
+          order: 'ASC',
+        },
+      });
+    } else {
+      return this.todoRepository.find({
+        where: { completed },
+        order: {
+          order: 'ASC',
+        },
+      });
+    }
   }
 
   findOne(id: number) {
@@ -38,6 +76,10 @@ export class TodoService {
       } else {
         todo.completed = updateTodoDto.completed;
       }
+    }
+
+    if (updateTodoDto.order !== undefined) {
+      todo.order = updateTodoDto.order;
     }
 
     return this.todoRepository.save(todo);

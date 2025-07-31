@@ -45,10 +45,11 @@ import {
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 
-interface Todo {
+export interface Todo {
   id: number;
   name: string;
   completed: boolean;
+  order: number; // Add order field
 }
 
 // Sortable Todo Row Component
@@ -99,7 +100,7 @@ const SortableTodoRow = ({
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Dialog
-            open={false} // This will be controlled by the parent component
+            open={false}
             onOpenChange={(open) => !open && setEditingTodo(null)}
           >
             <DialogTrigger asChild>
@@ -166,15 +167,27 @@ export default function Home() {
   );
 
   useEffect(() => {
-    ApiService.get("/todos").then((data) => {
-      setTodos(data);
-    });
+    loadTodos();
   }, []);
+
+  // Load todos and sort by order
+  const loadTodos = async () => {
+    const data = await ApiService.get("/todos");
+    // Sort todos by order field
+    const sortedTodos = data.sort((a: Todo, b: Todo) => a.order - b.order);
+    setTodos(sortedTodos);
+  };
 
   // Add a new todo
   const addTodo = async () => {
     if (!newTodoText.trim()) return;
-    const todo: Todo = await ApiService.post("/todos", newTodoText);
+    // Calculate the next order value
+    const nextOrder =
+      todos.length > 0 ? Math.max(...todos.map((t) => t.order)) + 1 : 0;
+    const todo: Todo = await ApiService.post("/todos", {
+      name: newTodoText,
+      order: nextOrder,
+    });
     setTodos([...todos, todo]);
     setNewTodoText("");
   };
@@ -182,7 +195,10 @@ export default function Home() {
   // Edit an existing todo
   const editTodo = async (todo: Todo) => {
     if (!editingTodo?.name.trim()) return;
-    await ApiService.update(`/todos/${editingTodo.id}`, editingTodo.name);
+    await ApiService.update(`/todos/${editingTodo.id}`, {
+      name: editingTodo.name,
+      order: editingTodo.order,
+    });
     setTodos(
       todos.map((t) =>
         t.id === todo.id ? { ...t, name: editingTodo?.name || t.name } : t
@@ -194,14 +210,27 @@ export default function Home() {
   // Delete a todo
   const deleteTodo = async (id: number) => {
     const isDeleted = await ApiService.delete(`/todos/${id}`);
-    isDeleted && setTodos(todos.filter((todo) => todo.id !== id));
+    if (isDeleted) {
+      const newTodos = todos.filter((todo) => todo.id !== id);
+      // Update order values for remaining todos
+      const updatedTodos = newTodos.map((todo, index) => ({
+        ...todo,
+        order: index,
+      }));
+      // Save updated order to backend
+      await ApiService.postReorder("/todos/reorder", updatedTodos);
+      setTodos(updatedTodos);
+    }
   };
 
   // Toggle todo completion
   const toggleTodoCompletion = async (id: number) => {
     const todo = todos.find((todo) => todo.id === id);
     if (!todo) return;
-    await ApiService.update(`/todos/${id}`, undefined, !todo.completed);
+    await ApiService.update(`/todos/${id}`, {
+      completed: !todo.completed,
+      order: todo.order,
+    });
     setTodos(
       todos.map((todo) =>
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
@@ -210,7 +239,7 @@ export default function Home() {
   };
 
   // Handle drag end event
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -218,7 +247,19 @@ export default function Home() {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
-        return arrayMove(items, oldIndex, newIndex);
+        // Reorder the array
+        const reorderedItems = arrayMove(items, oldIndex, newIndex);
+
+        // Update order values
+        const updatedItems = reorderedItems.map((item, index) => ({
+          ...item,
+          order: index,
+        }));
+
+        // Save the new order to backend
+        ApiService.postReorder("/todos/reorder", updatedItems);
+
+        return updatedItems;
       });
     }
   };
