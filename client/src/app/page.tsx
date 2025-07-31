@@ -61,7 +61,7 @@ const SortableTodoRow = ({
 }: {
   todo: Todo;
   toggleTodoCompletion: (id: number) => void;
-  setEditingTodo: (todo: Todo) => void;
+  setEditingTodo: (todo: Todo | null) => void;
   deleteTodo: (id: number) => void;
 }) => {
   const {
