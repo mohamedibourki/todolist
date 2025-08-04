@@ -28,7 +28,7 @@
     "@nestjs/mau": "^0.2.4",
     "@nestjs/platform-express": "^11.1.5",
     "@nestjs/typeorm": "^11.0.0",
-    "@sentry/nestjs": "^9.43.0",
+    "@sentry/nestjs": "^10.1.0",
     "@sentry/node": "^9.43.0",
     "@sentry/tracing": "^7.120.4",
     "class-transformer": "^0.5.1",
