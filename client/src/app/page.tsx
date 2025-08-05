@@ -28,6 +28,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -44,6 +45,7 @@ import {
   restrictToParentElement,
 } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export interface Todo {
   id: number;
@@ -58,11 +60,15 @@ const SortableTodoRow = ({
   toggleTodoCompletion,
   setEditingTodo,
   deleteTodo,
+  editTodo,
+  editingTodo,
 }: {
   todo: Todo;
   toggleTodoCompletion: (id: number) => void;
   setEditingTodo: (todo: Todo | null) => void;
   deleteTodo: (id: number) => void;
+  editTodo: (todo: Todo) => void;
+  editingTodo: Todo | null;
 }) => {
   const {
     attributes,
@@ -83,8 +89,12 @@ const SortableTodoRow = ({
     <TableRow ref={setNodeRef} style={style} {...attributes}>
       <TableCell>
         <div className="flex items-center">
-          <div {...listeners} className="mr-2 cursor-grab">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          {/* Larger touch area for mobile */}
+          <div
+            {...listeners}
+            className="mr-2 cursor-grab p-2 touch-manipulation"
+          >
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
           </div>
           <Checkbox
             checked={todo.completed}
@@ -100,7 +110,7 @@ const SortableTodoRow = ({
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
           <Dialog
-            open={false}
+            open={!!todo && todo.id === editingTodo?.id}
             onOpenChange={(open) => !open && setEditingTodo(null)}
           >
             <DialogTrigger asChild>
@@ -120,21 +130,21 @@ const SortableTodoRow = ({
                 </DialogDescription>
               </DialogHeader>
               <Input
-                value={todo.name}
+                value={editingTodo?.name || ""}
                 onChange={(e) =>
                   setEditingTodo(
                     todo ? { ...todo, name: e.target.value } : null
                   )
                 }
                 onKeyDown={(e) =>
-                  e.key === "Enter" && toggleTodoCompletion(todo.id)
+                  e.key === "Enter" && editTodo(todo)
                 }
               />
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditingTodo(null)}>
                   Cancel
                 </Button>
-                <Button onClick={() => toggleTodoCompletion(todo.id)}>
+                <Button onClick={() => editTodo(todo)}>
                   Save
                 </Button>
               </DialogFooter>
@@ -158,9 +168,19 @@ export default function Home() {
   const [newTodoText, setNewTodoText] = useState<string>("");
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
-  // Set up sensors for drag and drop
+  // Set up sensors for drag and drop with better mobile support
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // 250ms delay before drag starts
+        tolerance: 5, // 5px tolerance for movement
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -241,31 +261,29 @@ export default function Home() {
   // Handle drag end event
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       setTodos((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-
         // Reorder the array
         const reorderedItems = arrayMove(items, oldIndex, newIndex);
-
         // Update order values
         const updatedItems = reorderedItems.map((item, index) => ({
           ...item,
           order: index,
         }));
-
         // Save the new order to backend
         ApiService.postReorder("/todos/reorder", updatedItems);
-
         return updatedItems;
       });
     }
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
+    <div className="container mx-auto p-4 max-w-2xl mt-4">
+      <div className="flex justify-end mb-4">
+        <ModeToggle />
+      </div>
       <h1 className="text-2xl font-bold mb-4">Todo List</h1>
       {/* Add Todo Input */}
       <div className="flex gap-2 mb-4">
@@ -311,6 +329,8 @@ export default function Home() {
                     toggleTodoCompletion={toggleTodoCompletion}
                     setEditingTodo={setEditingTodo}
                     deleteTodo={deleteTodo}
+                    editTodo={editTodo}
+                    editingTodo={editingTodo}
                   />
                 ))}
               </SortableContext>
@@ -318,6 +338,11 @@ export default function Home() {
           </TableBody>
         </Table>
       </DndContext>
+
+      {/* Mobile instructions */}
+      <div className="mt-4 text-sm text-muted-foreground md:hidden">
+        <p>Tip: Touch and hold the grip icon to drag and reorder items</p>
+      </div>
     </div>
   );
 }
