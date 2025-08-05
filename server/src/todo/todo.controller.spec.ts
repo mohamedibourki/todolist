@@ -40,6 +40,7 @@ describe('TodoController', () => {
           id: 1,
           name: 'write full stack book',
           completed: false,
+          order: 0,
         },
       ];
       jest
