@@ -12,7 +12,7 @@ async function bootstrap() {
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   app.enableCors({
-    origin: 'https://todolist-vert-sigma.vercel.app',
+    origin: '*',
   });
 
   await app.listen(8001, '0.0.0.0');
