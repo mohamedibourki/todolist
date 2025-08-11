@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       # Setup Node.js
       - name: Setup Node.js
@@ -79,7 +79,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -130,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
